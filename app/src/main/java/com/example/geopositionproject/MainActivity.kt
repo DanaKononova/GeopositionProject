@@ -5,12 +5,9 @@ import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
-import android.location.Location
 import android.os.Bundle
 import android.os.Looper
-import android.view.View
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -26,7 +23,6 @@ import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.mapview.MapView
 import com.yandex.runtime.image.ImageProvider
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -84,6 +80,8 @@ class MainActivity : AppCompatActivity() {
         findViewById(R.id.mapview)
     }
 
+    private var isPermitted = false
+
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -91,12 +89,15 @@ class MainActivity : AppCompatActivity() {
             permissions.get(
                 ACCESS_FINE_LOCATION,
             ) == true -> {
+                isPermitted = true
             }
             permissions.get(
                 ACCESS_COARSE_LOCATION,
             ) == true -> {
+                isPermitted = true
             }
             else -> {
+                isPermitted = false
             }
         }
     }
@@ -108,7 +109,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         findViewById<ImageButton>(R.id.officeBt).setOnClickListener {
-            getOffice()
+            if (isPermitted) getOffice()
         }
 
         locationPermissionRequest.launch(
@@ -119,13 +120,14 @@ class MainActivity : AppCompatActivity() {
         )
 
         findViewById<ImageButton>(R.id.searchBt).setOnClickListener {
-            startLocationUpdates()
+            if (isPermitted) startLocationUpdates()
         }
     }
 
     override fun onStop() {
         mapView.onStop()
         MapKitFactory.getInstance().onStop()
+        markerClickCallbacks.clear()
         super.onStop()
     }
 
@@ -150,12 +152,13 @@ class MainActivity : AppCompatActivity() {
                     val markerClickCallback =
                         MapObjectTapListener { mapObject, _ ->
                             if (mapObject is PlacemarkMapObject) {
-                                val bottomSheetFragment = LocationInfoFragment()
-                                supportFragmentManager
-                                    .beginTransaction()
-                                    .add(bottomSheetFragment, "")
-                                    .addToBackStack("")
-                                    .commit()
+                                val bottomSheetFragment = LocationInfoDialog()
+//                                supportFragmentManager
+//                                    .beginTransaction()
+//                                    .add(bottomSheetFragment, "")
+//                                    .addToBackStack("")
+//                                    .commit()
+                                bottomSheetFragment.show(supportFragmentManager, bottomSheetFragment.tag)
                                 true
                             } else false
                         }
